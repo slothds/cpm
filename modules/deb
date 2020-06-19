@@ -1,0 +1,3 @@
+cpm-module() {
+    sudo dpkg -EGi ${2} &>/dev/null
+}

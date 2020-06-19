@@ -1,0 +1,7 @@
+cpm-module() {
+    sudo tar ${module_args} ${2} -C ${module_pkg_install} 1>/dev/null
+    sudo chown -R root:users ${module_pkg_dir} 1>/dev/null
+    sudo chmod -R ug=rwx,o+rx ${module_pkg_dir} 1>/dev/null
+
+    unset module_args module_pkg_install module_pkg_dir
+}

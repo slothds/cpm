@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+if [[ -n ${DEBUG} ]]; then
+	set -x
+fi
+
+usage() {
+    exit 1;
+}
+
+arg-set() {
+    if [[ ${ARGS} =~ ${1} ]]; then
+        return 1
+    fi
+
+    case ${1} in
+        'm') RUNMODE=${2} ;;
+        *)   usage        ;;
+    esac
+
+    ARGS="${ARGS}${1}"
+    return 0
+}
+
+get-package() {
+	local pkgn=${1}
+    local mode=${2}
+
+    source ${PKGDIR}/${pkgn}
+
+    if [[ -f ${MODDIR}/${pkgmod} ]]; then
+        source ${MODDIR}/${pkgmod}
+    else
+        exit 1
+    fi
+
+    [[ -z ${sedreg} ]] && \
+        sedreg=$(eval echo \${sedreg_$(uname -m)})
+
+    [[ -n ${sedreg} ]] && \
+        pkgurl=$(curl -kfsSL ${pkgurl} | sed -rn "s|${sedreg//\"/\\\"}|${sedrep}|p;" | head -n1)
+
+    if [[ -n ${verurl} ]]; then
+        newver=$(curl -kfsSL ${verurl} | sed -rn "s|${sedver//\"/\\\"}|\1|p;")
+    else
+        newver=$(echo -n "${pkgurl}" | sed -rn "s|${sedver//\"/\\\"}|\1|p;")
+    fi
+
+    [[ -f ${VERDIR}/${pkgn} ]] && \
+        oldver=$(cat ${VERDIR}/${pkgn})
+
+    if [[ ! -f ${VERDIR}/${pkgn} || ${newver} != ${oldver} ]]; then
+        dwnld='curl -kfSL'
+        if [[ -n ${mode} && ( ${mode} == 'cron' || ${mode} == 'quiet' ) ]]; then
+            dwnld=${dwnld}s
+        fi
+
+        sudo ${dwnld} ${pkgurl} -o ${TMPDIR}/${pkgn}.${pkgmod}
+
+        cpm-module "${pkgn}" "${TMPDIR}/${pkgn}.${pkgmod}"
+
+        [[ -n ${icon_app_name} ]] && make-app-menu-icon ${pkgn}
+
+        echo ${newver} | sudo tee ${VERDIR}/${pkgn} 1>/dev/null
+
+        printf "[ %-20s ]: Package version updated. ( %s --> %s )\n" ${pkgn} ${oldver} ${newver}
+
+        sudo rm -rf ${TMPDIR}/${pkgn}.${pkgmod} 1>/dev/null
+    else
+        if [[ -z ${mode} || ${mode} != 'cron' ]]; then
+            printf "[ %-20s ]: Package version alredy latest. ( %-s )\n" ${pkgn} ${oldver}
+        fi
+    fi
+
+    unset pkgurl sedreg sedreg_x86 sedreg_x86_64 sedrep
+    unset pkgver verurl sedver
+    unset pkgmod
+}
+
+make-app-menu-icon() {
+    if [[ ! -f /usr/share/applications/${1}.desktop || $(sed -rn 's|^Exec=(.*)|\1|p;' /usr/share/applications/${1}.desktop) != ${icon_exec} ]]; then
+        cat <<-EOT | sudo tee /usr/share/applications/${1}.desktop 1>/dev/null
+[Desktop Entry]
+Name=${icon_app_name}
+Comment=${icon_app_comment}
+Exec=${icon_exec}
+Icon=${1,,}
+Terminal=false
+Type=Application
+Categories=${icon_cats}
+${icon_extras}
+EOT
+
+        sudo chown root:root /usr/share/applications/${1}.desktop 1>/dev/null
+        sudo chmod 644 /usr/share/applications/${1}.desktop 1>/dev/null
+    fi
+
+    unset icon_app_name icon_app_comment icon_exec icon_cats icon_extras
+}
+
+WRKDIR=$(dirname $(realpath $0))
+MODDIR="${WRKDIR}/modules"
+PKGDIR="${WRKDIR}/packages"
+VERDIR="${WRKDIR}/versions"
+TMPDIR="${WRKDIR}/tmp"
+
+RUNMODE=''
+
+ARGS=''
+
+while getopts ":hm:" ARG; do
+    arg-set ${ARG} ${OPTARG}
+done
+
+for pkg in ${PKGDIR}/*; do
+    get-package $(basename ${pkg}) ${RUNMODE}
+done

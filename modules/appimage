@@ -1,0 +1,11 @@
+cpm-module() {
+    [[ ! -d /opt/AppImage ]] && sudo mkdir -p /opt/AppImage
+    if [[ -z ${module_args} || ${module_args} != 'ail-enabled' ]]; then
+        sudo mv ${2} /opt/AppImage/${1}.appimage
+        sudo chmod +x /opt/AppImage/${1}.appimage
+    else
+        ail-cli integrate ${2}
+    fi
+
+    unset module_args
+}
