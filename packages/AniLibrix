@@ -1,0 +1,13 @@
+pkgurl='https://github.com/anilibria/anilibria-winmaclinux/releases'
+pkgmod='appimage'
+
+sedreg='.*href="(.*AppImage).*'
+sedrep='https://github.com\1'
+sedver='.*download/(.*)/.*'
+
+icon_app_name='AniLibrix'
+icon_app_comment='Anilibria Linux Desktop Client'
+icon_exec='/opt/AppImage/AniLibrix.appimage'
+icon_cats='AudioVideo;Player;Video;'
+icon_extras='StartupWMClass=AniLibrixDesktop'
+icon_file_link='https://raw.githubusercontent.com/anilibria/anilibria-winmaclinux/master/anilibria.iconset/icon_128x128.png'
