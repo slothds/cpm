@@ -3,7 +3,7 @@ pkgmod='appimage'
 
 sedreg='.*href="(.*AppImage).*'
 sedrep='https://github.com\1'
-sedver='.*download/v(.*)/jitsi-meet.*'
+sedver='.*download/v(.*)/.*'
 
 icon_app_name='Jitsi Meet'
 icon_app_comment='Jitsi Meet desktop client'
