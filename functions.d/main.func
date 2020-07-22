@@ -1,0 +1,71 @@
+check-dir() {
+    local d
+
+    if [[ -n $@ ]]; then
+        for d in $@; do
+            [[ ! -d $d ]] && sudo mkdir -p $d
+        done
+    fi
+}
+
+clean-up() {
+    sudo rm -rf ${TMPDIR} 
+}
+
+get-package() {
+    local pdir=${1}
+	local pkgn=${2}
+    local mode=${3}
+
+    if [[ ! -f ${HOME}/.local/cpm/disabled/${pkgn} ]]; then
+        source ${pdir}/${pkgn}
+
+        if [[ -f ${MODDIR}/${pkgmod} ]]; then
+            source ${MODDIR}/${pkgmod}
+        else
+            exit 1
+        fi
+
+        [[ -z ${sedreg} ]] && \
+            sedreg=$(eval echo \${sedreg_$(uname -m)})
+
+        [[ -n ${sedreg} ]] && \
+            pkgurl=$(curl -kfsSL ${pkgurl} | sed -rn "s|${sedreg//\"/\\\"}|${sedrep}|p;" | head -n1)
+
+        if [[ -n ${verurl} ]]; then
+            newver=$(curl -kfsSL ${verurl} | sed -rn "s|${sedver//\"/\\\"}|\1|p;")
+        else
+            newver=$(echo -n "${pkgurl}" | sed -rn "s|${sedver//\"/\\\"}|\1|p;")
+        fi
+
+        [[ -f ${VERDIR}/${pkgn} ]] && \
+            oldver=$(cat ${VERDIR}/${pkgn})
+
+        if [[ ! -f ${VERDIR}/${pkgn} || ${newver} != ${oldver} ]]; then
+            dwnld='curl -kfSL'
+            if [[ -n ${mode} && ( ${mode} == 'cron' || ${mode} == 'quiet' ) ]]; then
+                dwnld=${dwnld}s
+            fi
+
+            sudo ${dwnld} ${pkgurl} -o ${TMPDIR}/${pkgn}.${pkgmod}
+
+            cpm-module "${pkgn}" "${TMPDIR}/${pkgn}.${pkgmod}"
+
+            [[ -n ${APPMENU} ]] && make-app-menu-icon ${pkgn}
+
+            echo ${newver} | sudo tee ${VERDIR}/${pkgn} 1>/dev/null
+
+            printf "[ %-20s ]: Package version updated. ( %s --> %s )\n" ${pkgn} ${oldver} ${newver}
+
+            sudo rm -rf ${TMPDIR}/${pkgn}.${pkgmod} 1>/dev/null
+        else
+            if [[ -z ${mode} || ${mode} != 'cron' ]]; then
+                printf "[ %-20s ]: Package version alredy latest. ( %-s )\n" ${pkgn} ${oldver}
+            fi
+        fi
+    fi
+
+    unset pkgurl sedreg sedreg_x86 sedreg_x86_64 sedrep
+    unset pkgver verurl sedver
+    unset pkgmod
+}
