@@ -1,0 +1,30 @@
+APPMENU='enable'
+
+make-app-menu-icon() {
+    if [[ -n ${icon_app_name} ]]; then
+        if [[ -n ${icon_file_link} ]]; then
+            local icon_ext=$(echo ${icon_file_link}|sed -rn 's|.*\.(.*)$|\1|p;')
+            sudo curl -kfsSL ${icon_file_link} -o /usr/share/icons/${1,,}.${icon_ext}
+            sudo chown root:root /usr/share/icons/${1,,}.${icon_ext} 1>/dev/null
+            sudo chmod 644 /usr/share/icons/${1,,}.${icon_ext} 1>/dev/null
+        fi
+        if [[ ! -f /usr/share/applications/${1}.desktop || $(sed -rn 's|^Exec=(.*)|\1|p;' /usr/share/applications/${1}.desktop) != ${icon_exec} ]]; then
+            cat <<-EOT | sudo tee /usr/share/applications/${1}.desktop 1>/dev/null
+[Desktop Entry]
+Name=${icon_app_name}
+Comment=${icon_app_comment}
+Exec=${icon_exec}
+Icon=${1,,}
+Terminal=false
+Type=Application
+Categories=${icon_cats}
+${icon_extras}
+EOT
+
+            sudo chown root:root /usr/share/applications/${1}.desktop 1>/dev/null
+            sudo chmod 644 /usr/share/applications/${1}.desktop 1>/dev/null
+        fi
+    fi
+
+    unset icon_app_name icon_app_comment icon_exec icon_cats icon_extras icon_file_link icon_ext
+}
