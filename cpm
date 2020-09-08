@@ -1,55 +1,44 @@
 #!/usr/bin/env bash
-if [[ -n ${DEBUG} ]]; then
+if ${DEBUG}; then
 	set -x
 fi
+
+PKGSGITURL='https://raw.githubusercontent.com/slothds/cpm-packages/master'
+PKGSLOCALD="${HOME}/.local/cpm/packages"
+PKGSLIST='packages.list'
 
 WRKDIR=$(dirname $(realpath $0))
 
 MODDIR="${WRKDIR}/modules.d"
 FUNDIR="${WRKDIR}/functions.d"
-PKGDIR="${WRKDIR}/packages,${HOME}/.local/cpm/packages"
 VERDIR="/var/db/cpm"
 TMPDIR="/tmp/cpm"
-
-usage() {
-    exit 1;
-}
-
-arg-set() {
-    if [[ ${ARGS} =~ ${1} ]]; then
-        return 1
-    fi
-
-    case ${1} in
-        'm') RUNMODE=${2} ;;
-        *)   usage        ;;
-    esac
-
-    ARGS="${ARGS}${1}"
-    return 0
-}
 
 for func in ${FUNDIR}/*.func; do
     source ${func}
 done
 
-RUNMODE=''
+ALL=false
+INSTALL=false
+DEBUG=false
+SILENT=false
+UPDATE=false
 
-ARGS=''
-
-while getopts ":hm:" ARG; do
-    arg-set ${ARG} ${OPTARG}
-done
+if [[ -n $(which getopt) ]]; then
+    parse-getopt  $@
+else
+    parse-getopts $@
+fi
 
 check-dir ${VERDIR} ${TMPDIR}
 
-IFS=','
-for DIR in ${PKGDIR}; do
-    IFS=$'\r\n\t '
-    for pkg in ${DIR}/*; do
-        [[ -f ${pkg} ]] && \
-            get-package ${DIR} $(basename ${pkg}) ${RUNMODE}
-    done
-done
+# IFS=','
+# for DIR in ${PKGDIR}; do
+#     IFS=$'\r\n\t '
+#     for pkg in ${DIR}/*; do
+#         [[ -f ${pkg} ]] && \
+#             get-package ${DIR} $(basename ${pkg}) ${RUNMODE}
+#     done
+# done
 
 clean-up

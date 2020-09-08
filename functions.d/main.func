@@ -1,3 +1,7 @@
+usage() {
+    echo 'Comming soon...';
+}
+
 check-dir() {
     local d
 
