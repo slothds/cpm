@@ -1,0 +1,29 @@
+parse-getopt() {
+    local SOPT='adhisu'
+    local LOPT='all,debug,help,install,silent,update'
+    local OPTS=$(getopt -q \
+        --options ${SOPT} \
+        --longoptions ${LOPT} \
+        --name "$(basename "$0")" \
+        -- "$@"
+    )
+    if [[ $? > 0 ]]; then
+        usage && exit 2
+    fi
+
+    eval set -- $OPTS
+
+    while [[ $# > 0 ]]; do
+        case ${1} in
+            -a|--all)     ALL=true        ;;
+            -d|--debug)   DEBUG=true      ;;
+            -h|--help)    usage && exit 0 ;;
+            -i|--install) INSTALL=true    ;;
+            -s|--silent)  SILENT=true     ;;
+            -u|--update)  UPDATE=true     ;;
+            --)                           ;;
+            *)            PKGS+=( $1 )    ;;
+        esac
+        shift
+    done
+}

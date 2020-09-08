@@ -1,0 +1,26 @@
+parse-getopts() {
+    while getopts ":adhisu-:" ARG; do
+        case ${ARG} in
+            a) ALL=true        ;;
+            d) DEBUG=true      ;;
+            h) usage && exit 0 ;;
+            i) INSTALL=true    ;;
+            s) SILENT=true     ;;
+            u) UPDATE=true     ;;
+            -)
+                case ${OPTARG} in
+                    all)     ALL=true        ;;
+                    debug)   DEBUG=true      ;;
+                    help)    usage && exit 0 ;;
+                    install) INSTALL=true    ;;
+                    silent)  SILENT=true     ;;
+                    update)  UPDATE=true     ;;
+                    *)       usage && exit 2 ;;
+                esac
+            ;;
+            *) usage && exit 2 ;;
+        esac
+    done
+    shift $((OPTIND-1))
+    PKGS+=( $@ )
+}

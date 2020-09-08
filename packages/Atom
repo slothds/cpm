@@ -1,5 +1,0 @@
-pkgurl='https://atom.io/download/deb'
-pkgmod='deb'
-
-verurl='https://atom.io'
-sedver='.*<span class="version">(.*)</span>'

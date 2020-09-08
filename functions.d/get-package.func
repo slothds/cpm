@@ -1,0 +1,28 @@
+get-packages-list() {
+    local packages
+    packages+=( $(curl -kfsSL ${PKGSGITURL}/${PKGSLIST}) )
+    if [[ -d ${PKGSLOCALD} ]]; then
+        [[ -f ${PKGSLOCALD}/${PKGSLIST} ]] && \
+            packages+=( $(cat ${PKGSLOCALD}/${PKGSLIST}) )
+    fi
+
+    echo ${packages[@]}
+}
+
+get-packages-installed() {
+    # List installed packages func
+}
+
+get-packages-availeble() {}
+
+packages-install() {
+    # Install package(s) func
+}
+
+packages-update() {
+    # Update package(s) func
+}
+
+packages-disable() {
+    # Disable package(s) from install/update
+}
