@@ -1,11 +1,11 @@
 get-packages-list() {
-    local packages_array+=( $(curl -kfsSL ${pkgs_online_repo}/${packages_list}) )
+    local list+=( $(curl -kfsSL ${pkgs_online_repo}/${packages_list}) )
     if [[ -d ${pkgs_local_repo} ]]; then
         [[ -f ${pkgs_local_repo}/${packages_list} ]] && \
-            packages_array+=( $(cat ${pkgs_local_repo}/${packages_list}) )
+            list+=( $(cat ${pkgs_local_repo}/${packages_list}) )
     fi
 
-    echo ${packages_array[@]}
+    echo ${list[@]}
 }
 
 get-packages-installed() {
@@ -14,22 +14,70 @@ get-packages-installed() {
 
 get-packages-availeble() {}
 
+check-packages() {
+    local package=$1
+
+    if [[ -n ${packages[@]} && ${package} =~ "${packages[@]}" ]] || ${all_packages}; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 packages-install() {
+    local vlist dwnld='curl -kfL'
+    local pkgurl sedreg sedrep
+    local pkgver verurl sedver
+    local pkgmod
     # Install package(s) func
     ( [[ -z ${packages[@]} ]] && ! ${all_packages} ) && usage && exit 1
 
     for package in $(get-packages-list); do
-        if [[ -n ${packages[@]} && ${package} =~ "${packages[@]}" ]] || ${all_packages}; then
-            if [[ ! -f ${database_dir}/${package}.disabled ]]; then
-                if [[ ! -f ${database_dir}/${package}.version ]]; then
-                    [[ -f ${pkgs_local_repo}/${package} ]] && \
-                        source ${pkgs_local_repo}/${package} || \
-                        source <(curl -kfsSL ${pkgs_online_repo}/${package} 2>/dev/null)
-
-                    [[  ]]
-                fi
-            fi
+        check-packages $package || continue
+        [[ -f ${database_dir}/${package}.disabled ]] && continue
+        printf '[ %-20s ]: ' ${package}
+        if [[ -f ${database_dir}/${package}.version ]]; then
+            printf 'Skipped. Alredy installed. (%-s)\n' $(cat ${database_dir}/${package}.version)
+            continue
         fi
+        vlist=$(cat ${pkgs_local_repo}/${package}) \
+        || \
+        vlist=$(curl -kfsL ${pkgs_online_repo}/${package})
+        if [[ $? > 0 ]]; then
+            printf 'Not exists in database.\n'
+            continue
+        fi
+        IFS=$'\n'
+        for var in ${vlist}; do
+            local ${var//\'/}
+        done
+        unset IFS
+        [[ -f ${modules}/${pkgmod} ]] && \
+            source ${modules}/${pkgmod} || continue
+        if [[ -z ${sedreg} && -n $(eval echo \${sedreg_$(uname -m)}) ]]; then
+            sedreg=$(eval echo \${sedreg_$(uname -m)})
+        else
+            printf 'Not found sed regexp.\n'
+            continue
+        fi
+        pkgurl=$(curl -kfsL ${pkgurl} | sed -rn "s|${sedreg//\"/\\\"}|${sedrep}|p;" | head -n1)
+        [[ -n ${verurl} ]] && \
+            pkgver=$(curl -kfsSL ${verurl} | sed -rn "s|${sedver//\"/\\\"}|\1|p;") \
+        || \
+            pkgver=$(echo -n "${pkgurl}" | sed -rn "s|${sedver//\"/\\\"}|\1|p;")
+
+        ${dwnld} ${pkgurl} -o ${temp_dir}/${package}.${pkgmod} &
+        current_job=$!
+        printf '\e[s'
+        while [[ -n $(ps -p ${current_job} -o pid=) ]]; do
+            printf '\e[u\e[K%s ' 'Downloading'
+            printf '.%.s ' $(eval echo {1..${loop}})
+            loop=$(( loop + 1 ))
+            [[ ${loop} > 3 ]] && loop=1
+            sleep 1
+        done
+        [[ $? > 0 ]] && cpm-module "${package}" "${temp_dir}/${package}.${pkgmod}"
+        if ${make_app_menu}; then make-app-menu-icon ${package}
     done
 }
 

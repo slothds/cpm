@@ -1,4 +1,4 @@
-APPMENU='enable'
+make_app_menu=true
 
 make-app-menu-icon() {
     if [[ -n ${icon_app_name} ]]; then

@@ -1,7 +1,20 @@
 #!/usr/bin/env bash
-if ${DEBUG}; then
-	set -x
-fi
+
+kill_child_processes() {
+    local pid="$1"
+    local self="${2:-false}"
+
+    if childs="$(pgrep -P "$pid")"; then
+        for child in $childs; do
+            kill_child_processes "$child" true
+        done
+    fi
+    if [[ "$self" == true ]]; then
+        kill "$pid" 2>/dev/null
+    fi
+}
+
+trap 'kill_child_processes $$' SIGHUP SIGINT SIGKILL SIGTERM
 
 pkgs_online_repo='https://raw.githubusercontent.com/slothds/cpm-packages/master'
 pkgs_local_repo="${HOME}/.local/cpm/packages"
@@ -9,8 +22,8 @@ packages_list='packages.list'
 
 WORKDIR=$(dirname $(realpath $0))
 
-modules="${WRKDIR}/modules.d"
-functions="${WRKDIR}/functions.d"
+modules="${WORKDIR}/modules.d"
+functions="${WORKDIR}/functions.d"
 
 temp_dir="/tmp/cpm"
 database_dir="/var/db/cpm"
@@ -20,6 +33,7 @@ for func in ${functions}/*.func; do
 done
 
 all_packages=false
+make_app_menu=false
 run_silent=false
 exec_mode=''
 packages=()
