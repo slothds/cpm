@@ -3,26 +3,26 @@ if ${DEBUG}; then
 	set -x
 fi
 
-PKGSGITURL='https://raw.githubusercontent.com/slothds/cpm-packages/master'
-PKGSLOCALD="${HOME}/.local/cpm/packages"
-PKGSLIST='packages.list'
+pkgs_online_repo='https://raw.githubusercontent.com/slothds/cpm-packages/master'
+pkgs_local_repo="${HOME}/.local/cpm/packages"
+packages_list='packages.list'
 
-WRKDIR=$(dirname $(realpath $0))
+WORKDIR=$(dirname $(realpath $0))
 
-MODDIR="${WRKDIR}/modules.d"
-FUNDIR="${WRKDIR}/functions.d"
-VERDIR="/var/db/cpm"
-TMPDIR="/tmp/cpm"
+modules="${WRKDIR}/modules.d"
+functions="${WRKDIR}/functions.d"
 
-for func in ${FUNDIR}/*.func; do
+temp_dir="/tmp/cpm"
+database_dir="/var/db/cpm"
+
+for func in ${functions}/*.func; do
     source ${func}
 done
 
-ALL=false
-INSTALL=false
-DEBUG=false
-SILENT=false
-UPDATE=false
+all_packages=false
+run_silent=false
+exec_mode=''
+packages=()
 
 if [[ -n $(which getopt) ]]; then
     parse-getopt  $@
@@ -31,6 +31,12 @@ else
 fi
 
 check-dir ${VERDIR} ${TMPDIR}
+
+case ${exec_mode} in
+    install) packages-install ;;
+    update)  packages-update  ;;
+    disable) packages-disable ;;
+esac
 
 # IFS=','
 # for DIR in ${PKGDIR}; do

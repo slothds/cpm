@@ -1,12 +1,11 @@
 get-packages-list() {
-    local packages
-    packages+=( $(curl -kfsSL ${PKGSGITURL}/${PKGSLIST}) )
-    if [[ -d ${PKGSLOCALD} ]]; then
-        [[ -f ${PKGSLOCALD}/${PKGSLIST} ]] && \
-            packages+=( $(cat ${PKGSLOCALD}/${PKGSLIST}) )
+    local packages_array+=( $(curl -kfsSL ${pkgs_online_repo}/${packages_list}) )
+    if [[ -d ${pkgs_local_repo} ]]; then
+        [[ -f ${pkgs_local_repo}/${packages_list} ]] && \
+            packages_array+=( $(cat ${pkgs_local_repo}/${packages_list}) )
     fi
 
-    echo ${packages[@]}
+    echo ${packages_array[@]}
 }
 
 get-packages-installed() {
@@ -17,6 +16,21 @@ get-packages-availeble() {}
 
 packages-install() {
     # Install package(s) func
+    ( [[ -z ${packages[@]} ]] && ! ${all_packages} ) && usage && exit 1
+
+    for package in $(get-packages-list); do
+        if [[ -n ${packages[@]} && ${package} =~ "${packages[@]}" ]] || ${all_packages}; then
+            if [[ ! -f ${database_dir}/${package}.disabled ]]; then
+                if [[ ! -f ${database_dir}/${package}.version ]]; then
+                    [[ -f ${pkgs_local_repo}/${package} ]] && \
+                        source ${pkgs_local_repo}/${package} || \
+                        source <(curl -kfsSL ${pkgs_online_repo}/${package} 2>/dev/null)
+
+                    [[  ]]
+                fi
+            fi
+        fi
+    done
 }
 
 packages-update() {

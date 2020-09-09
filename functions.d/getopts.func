@@ -1,26 +1,26 @@
 parse-getopts() {
     while getopts ":adhisu-:" ARG; do
         case ${ARG} in
-            a) ALL=true        ;;
-            d) DEBUG=true      ;;
-            h) usage && exit 0 ;;
-            i) INSTALL=true    ;;
-            s) SILENT=true     ;;
-            u) UPDATE=true     ;;
+            a) all_packages=true ;;
+            d) exec_mode=disable ;;
+            h) usage && exit 0   ;;
+            i) exec_mode=install ;;
+            s) run_silent=true   ;;
+            u) exec_mode=update  ;;
             -)
                 case ${OPTARG} in
-                    all)     ALL=true        ;;
-                    debug)   DEBUG=true      ;;
-                    help)    usage && exit 0 ;;
-                    install) INSTALL=true    ;;
-                    silent)  SILENT=true     ;;
-                    update)  UPDATE=true     ;;
-                    *)       usage && exit 2 ;;
+                    all)     all_packages=true ;;
+                    disable) exec_mode=disable ;;
+                    help)    usage && exit 0   ;;
+                    install) exec_mode=install ;;
+                    silent)  run_silent=true   ;;
+                    update)  exec_mode=update  ;;
+                    *)       usage && exit 2   ;;
                 esac
             ;;
             *) usage && exit 2 ;;
         esac
     done
     shift $((OPTIND-1))
-    PKGS+=( $@ )
+    packages+=( $@ )
 }

@@ -1,6 +1,6 @@
 parse-getopt() {
     local SOPT='adhisu'
-    local LOPT='all,debug,help,install,silent,update'
+    local LOPT='all,disable,help,install,silent,update'
     local OPTS=$(getopt -q \
         --options ${SOPT} \
         --longoptions ${LOPT} \
@@ -15,14 +15,14 @@ parse-getopt() {
 
     while [[ $# > 0 ]]; do
         case ${1} in
-            -a|--all)     ALL=true        ;;
-            -d|--debug)   DEBUG=true      ;;
-            -h|--help)    usage && exit 0 ;;
-            -i|--install) INSTALL=true    ;;
-            -s|--silent)  SILENT=true     ;;
-            -u|--update)  UPDATE=true     ;;
-            --)                           ;;
-            *)            PKGS+=( $1 )    ;;
+            -a|--all)     all_packages=true ;;
+            -d|--disable) exec_mode=disable ;;
+            -h|--help)    usage && exit 0   ;;
+            -i|--install) exec_mode=install ;;
+            -s|--silent)  run_silent=true   ;;
+            -u|--update)  exec_mode=update  ;;
+            --)                             ;;
+            *)            packages+=( $1 )  ;;
         esac
         shift
     done
